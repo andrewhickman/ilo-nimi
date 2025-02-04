@@ -18,7 +18,7 @@ struct Args {
     #[clap(short = 'n', long, default_value = "1")]
     count: usize,
     // Output names in title-case.
-    #[clap(long)]
+    #[clap(long, alias = "title")]
     title_case: bool,
     // Seed for name generation
     #[clap(long)]
@@ -45,7 +45,7 @@ fn main() {
     let generator = NameGenerator::new(args.min_length, args.max_length);
 
     for _ in 0..args.count {
-        let name = generator.generate(&mut rng);
+        let name = generator.generate(&mut rng, args.title_case);
         println!("{name}");
     }
 }

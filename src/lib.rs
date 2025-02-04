@@ -37,9 +37,9 @@ impl NameGenerator {
         }
     }
 
-    pub fn generate(&self, rng: &mut impl Rng) -> String {
+    pub fn generate(&self, rng: &mut impl Rng, title_case: bool) -> String {
         loop {
-            let name = name(rng, &self.syllable_count);
+            let name = name(rng, &self.syllable_count, title_case);
             if name.len() >= self.min_length as usize
                 && self.max_length.is_none_or(|max| name.len() <= max as usize)
             {
@@ -49,7 +49,7 @@ impl NameGenerator {
     }
 }
 
-fn name(rng: &mut impl Rng, syllable_distribution: &SyllableCountDistribution) -> String {
+fn name(rng: &mut impl Rng, syllable_distribution: &SyllableCountDistribution, title_case: bool) -> String {
     let syllables = match *syllable_distribution {
         SyllableCountDistribution::Fixed(syllables) => syllables,
         SyllableCountDistribution::Poisson(min_syllables, poisson) => {
@@ -58,23 +58,23 @@ fn name(rng: &mut impl Rng, syllable_distribution: &SyllableCountDistribution) -
     };
 
     let mut name = String::new();
-    initial(&mut name, rng);
+    initial(&mut name, rng, title_case);
     for _ in 0..(syllables - 1) {
-        syllable(&mut name, rng);
+        syllable(&mut name, rng, false);
     }
 
     name
 }
 
-fn initial(buf: &mut String, rng: &mut impl Rng) {
+fn initial(buf: &mut String, rng: &mut impl Rng, title_case: bool) {
     if rng.random_bool(0.25) {
-        nucleus(buf, rng)
+        nucleus(buf, rng, title_case)
     } else {
-        syllable(buf, rng)
+        syllable(buf, rng, title_case)
     }
 }
 
-fn syllable(buf: &mut String, rng: &mut impl Rng) {
+fn syllable(buf: &mut String, rng: &mut impl Rng, title_case: bool) {
     let last = buf.chars().last();
     let onset = ['p', 't', 'k', 's', 'm', 'n', 'l', 'j', 'w']
         .choose_weighted(rng, |v| match v {
@@ -91,12 +91,16 @@ fn syllable(buf: &mut String, rng: &mut impl Rng) {
         })
         .unwrap();
 
-    buf.push(*onset);
+    if title_case {
+        buf.push(onset.to_ascii_uppercase());
+    } else {
+        buf.push(*onset);
+    }
 
-    nucleus(buf, rng);
+    nucleus(buf, rng, false);
 }
 
-fn nucleus(buf: &mut String, rng: &mut impl Rng) {
+fn nucleus(buf: &mut String, rng: &mut impl Rng, title_case: bool) {
     let last = buf.chars().last();
     let nucleus = ['a', 'i', 'e', 'o', 'u']
         .choose_weighted(rng, |v| match v {
@@ -109,7 +113,11 @@ fn nucleus(buf: &mut String, rng: &mut impl Rng) {
         })
         .unwrap();
 
-    buf.push(*nucleus);
+    if title_case {
+        buf.push(nucleus.to_ascii_uppercase());
+    } else {
+        buf.push(*nucleus);
+    }
 
     if rng.random_bool(0.06) {
         buf.push('n');
