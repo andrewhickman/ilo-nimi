@@ -1,74 +1,51 @@
+use std::process::exit;
+
+use clap::Parser;
+use ilo_nimi::NameGenerator;
 use rand::prelude::*;
+use sha2::{Digest, Sha256};
+
+/// Generates random names.
+#[derive(Parser)]
+struct Args {
+    // Minimum length for name.
+    #[clap(long, default_value = "1", alias = "min")]
+    min_length: u32,
+    // Maximum length for name.
+    #[clap(long, alias = "max")]
+    max_length: Option<u32>,
+    // Number of names to generate.
+    #[clap(short = 'n', long, default_value = "1")]
+    count: usize,
+    // Output names in title-case.
+    #[clap(long)]
+    title_case: bool,
+    // Seed for name generation
+    #[clap(long)]
+    seed: Option<String>,
+}
 
 fn main() {
-    let mut rng = rand::rngs::SmallRng::from_entropy();
-    for _ in 0..100 {
-        let name = name(&mut rng);
-        if name.len() != 1 {
-            println!("{}", name);
-        }
-    }
-}
+    let args = Args::parse();
 
-fn name(rng: &mut impl Rng) -> String {
-    let len = [1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6]
-        .choose(rng)
-        .unwrap();
-
-    let mut name = String::new();
-    initial(&mut name, rng);
-    for _ in 0..(len - 1) {
-        syllable(&mut name, rng);
+    if args
+        .max_length
+        .is_some_and(|max| max == 0 || max < args.min_length)
+    {
+        eprintln!("invalid max value");
+        exit(1);
     }
 
-    name
-}
-
-fn initial(buf: &mut String, rng: &mut impl Rng) {
-    if rng.gen_bool(0.25) {
-        nucleus(buf, rng)
+    let mut rng = if let Some(seed) = args.seed {
+        SmallRng::from_seed(Sha256::digest(seed).into())
     } else {
-        syllable(buf, rng)
-    }
-}
+        SmallRng::from_os_rng()
+    };
 
-fn syllable(buf: &mut String, rng: &mut impl Rng) {
-    let last = buf.chars().last();
-    let onset = ['p', 't', 'k', 's', 'm', 'n', 'l', 'j', 'w']
-        .choose_weighted(rng, |v| match v {
-            'p' => 61,
-            't' => 45,
-            'k' => 91,
-            's' => 64,
-            'm' if last != Some('n') => 50,
-            'n' if last != Some('n') => 32,
-            'l' => 83,
-            'j' => 35,
-            'w' => 34,
-            _ => 0,
-        })
-        .unwrap();
-    buf.push(*onset);
+    let generator = NameGenerator::new(args.min_length, args.max_length);
 
-    nucleus(buf, rng);
-}
-
-fn nucleus(buf: &mut String, rng: &mut impl Rng) {
-    let last = buf.chars().last();
-    let nucleus = ['a', 'i', 'e', 'o', 'u']
-        .choose_weighted(rng, |v| match v {
-            'a' => 146,
-            'e' => 94,
-            'i' if last != Some('t') && last != Some('j') => 109,
-            'o' if last != Some('w') => 82,
-            'u' if last != Some('w') => 60,
-            _ => 0,
-        })
-        .unwrap();
-
-    buf.push(*nucleus);
-
-    if rng.gen_bool(0.06) {
-        buf.push('n');
+    for _ in 0..args.count {
+        let name = generator.generate(&mut rng);
+        println!("{name}");
     }
 }
