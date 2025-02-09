@@ -1,10 +1,31 @@
-use rand::{seq::IndexedRandom, Rng};
+mod syllable;
+
+use clap::ValueEnum;
+use rand::Rng;
 use rand_distr::{Distribution, Poisson};
+
+use crate::syllable::Syllable;
 
 pub struct NameGenerator {
     min_length: u32,
     max_length: Option<u32>,
     syllable_count: SyllableCountDistribution,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum Script {
+    Arabic,
+    Cyrillic,
+    Devanagari,
+    Greek,
+    Hangul,
+    Hebrew,
+    Latin,
+    LatinTitleCase,
+}
+
+struct Name {
+    syllables: Vec<Syllable>,
 }
 
 enum SyllableCountDistribution {
@@ -37,89 +58,46 @@ impl NameGenerator {
         }
     }
 
-    pub fn generate(&self, rng: &mut impl Rng, title_case: bool) -> String {
+    pub fn generate(&self, rng: &mut impl Rng, script: Script) -> String {
         loop {
-            let name = name(rng, &self.syllable_count, title_case);
+            let name = Name::random(rng, &self.syllable_count);
             if name.len() >= self.min_length as usize
                 && self.max_length.is_none_or(|max| name.len() <= max as usize)
             {
-                return name;
+                return name.write(script);
             }
         }
     }
 }
 
-fn name(rng: &mut impl Rng, syllable_distribution: &SyllableCountDistribution, title_case: bool) -> String {
-    let syllables = match *syllable_distribution {
-        SyllableCountDistribution::Fixed(syllables) => syllables,
-        SyllableCountDistribution::Poisson(min_syllables, poisson) => {
-            min_syllables + poisson.sample(rng) as u32
+impl Name {
+    fn random(rng: &mut impl Rng, syllable_distribution: &SyllableCountDistribution) -> Self {
+        let syllable_count = match *syllable_distribution {
+            SyllableCountDistribution::Fixed(syllables) => syllables,
+            SyllableCountDistribution::Poisson(min_syllables, poisson) => {
+                min_syllables + poisson.sample(rng) as u32
+            }
+        };
+
+        let mut syllables = Vec::new();
+        for _ in 0..syllable_count {
+            let next = Syllable::new(rng, syllables.last_mut());
+            syllables.push(next);
         }
-    };
 
-    let mut name = String::new();
-    initial(&mut name, rng, title_case);
-    for _ in 0..(syllables - 1) {
-        syllable(&mut name, rng, false);
+        Name { syllables }
     }
 
-    name
-}
-
-fn initial(buf: &mut String, rng: &mut impl Rng, title_case: bool) {
-    if rng.random_bool(0.25) {
-        nucleus(buf, rng, title_case)
-    } else {
-        syllable(buf, rng, title_case)
-    }
-}
-
-fn syllable(buf: &mut String, rng: &mut impl Rng, title_case: bool) {
-    let last = buf.chars().last();
-    let onset = ['p', 't', 'k', 's', 'm', 'n', 'l', 'j', 'w']
-        .choose_weighted(rng, |v| match v {
-            'p' => 61,
-            't' => 45,
-            'k' => 91,
-            's' => 64,
-            'm' if last != Some('n') => 50,
-            'n' if last != Some('n') => 32,
-            'l' => 83,
-            'j' => 35,
-            'w' => 34,
-            _ => 0,
-        })
-        .unwrap();
-
-    if title_case {
-        buf.push(onset.to_ascii_uppercase());
-    } else {
-        buf.push(*onset);
+    fn len(&self) -> usize {
+        self.syllables.iter().map(|syllable| syllable.len()).sum()
     }
 
-    nucleus(buf, rng, false);
-}
+    fn write(&self, script: Script) -> String {
+        let mut buf = String::new();
+        for (i, syllable) in self.syllables.iter().enumerate() {
+            syllable.write(&mut buf, script, i == 0, i == self.syllables.len() - 1);
+        }
 
-fn nucleus(buf: &mut String, rng: &mut impl Rng, title_case: bool) {
-    let last = buf.chars().last();
-    let nucleus = ['a', 'i', 'e', 'o', 'u']
-        .choose_weighted(rng, |v| match v {
-            'a' => 146,
-            'e' => 94,
-            'i' if last != Some('t') && last != Some('j') => 140,
-            'o' if last != Some('w') => 88,
-            'u' if last != Some('w') => 64,
-            _ => 0,
-        })
-        .unwrap();
-
-    if title_case {
-        buf.push(nucleus.to_ascii_uppercase());
-    } else {
-        buf.push(*nucleus);
-    }
-
-    if rng.random_bool(0.06) {
-        buf.push('n');
+        buf
     }
 }

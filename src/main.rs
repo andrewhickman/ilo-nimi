@@ -1,7 +1,7 @@
 use std::process::exit;
 
 use clap::Parser;
-use ilo_nimi::NameGenerator;
+use ilo_nimi::{NameGenerator, Script};
 use rand::prelude::*;
 use sha2::{Digest, Sha256};
 
@@ -18,8 +18,8 @@ struct Args {
     #[clap(short = 'n', long, default_value = "1")]
     count: usize,
     // Output names in title-case.
-    #[clap(long, alias = "title")]
-    title_case: bool,
+    #[clap(long, default_value = "latin")]
+    script: Script,
     // Seed for name generation
     #[clap(long)]
     seed: Option<String>,
@@ -27,6 +27,11 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
+
+    if args.min_length == 0 {
+        eprintln!("invalid min value");
+        exit(1);
+    }
 
     if args
         .max_length
@@ -45,7 +50,7 @@ fn main() {
     let generator = NameGenerator::new(args.min_length, args.max_length);
 
     for _ in 0..args.count {
-        let name = generator.generate(&mut rng, args.title_case);
+        let name = generator.generate(&mut rng, args.script);
         println!("{name}");
     }
 }
