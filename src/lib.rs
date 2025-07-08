@@ -15,13 +15,17 @@ pub struct NameGenerator {
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum Script {
     Arabic,
+    Ascii,
     Cyrillic,
     Devanagari,
     Greek,
+    Gujarati,
     Hangul,
+    Kannada,
     Hebrew,
     Latin,
     LatinTitleCase,
+    Syllabics,
 }
 
 struct Name {
