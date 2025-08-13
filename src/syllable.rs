@@ -144,6 +144,19 @@ impl Syllable {
                 buf.push(self.onset.syllabics_char(self.nucleus));
                 buf.extend(self.coda.syllabics_char());
             }
+            Script::Shavian => {
+                buf.extend(self.onset.shavian_char());
+                buf.push(self.nucleus.shavian_char());
+                buf.extend(self.coda.shavian_char());
+            }
+            Script::Hiragana => {
+                buf.push(self.onset.hiragana_char(self.nucleus));
+                buf.extend(self.coda.hiragana_char());
+            }
+            Script::Katakana => {
+                buf.push(self.onset.katakana_char(self.nucleus));
+                buf.extend(self.coda.katakana_char());
+            }
         }
     }
 
@@ -567,6 +580,131 @@ impl Onset {
             (Onset::W, Nucleus::U) => unreachable!(),
         }
     }
+
+    fn shavian_char(&self) -> Option<char> {
+        match self {
+            Onset::Null => None,
+            Onset::P => Some('𐑐'),
+            Onset::T => Some('𐑑'),
+            Onset::K => Some('𐑒'),
+            Onset::S => Some('𐑕'),
+            Onset::M => Some('𐑥'),
+            Onset::N => Some('𐑯'),
+            Onset::L => Some('𐑤'),
+            Onset::J => Some('𐑘'),
+            Onset::W => Some('𐑢'),
+        }
+    }
+
+    fn hiragana_char(&self, nucleus: Nucleus) -> char {
+        match (self, nucleus) {
+            (Onset::Null, Nucleus::A) => 'あ',
+            (Onset::Null, Nucleus::I) => 'い',
+            (Onset::Null, Nucleus::U) => 'う',
+            (Onset::Null, Nucleus::E) => 'え',
+            (Onset::Null, Nucleus::O) => 'お',
+            (Onset::K, Nucleus::A) => 'か',
+            (Onset::K, Nucleus::I) => 'き',
+            (Onset::K, Nucleus::U) => 'く',
+            (Onset::K, Nucleus::E) => 'け',
+            (Onset::K, Nucleus::O) => 'こ',
+            (Onset::S, Nucleus::A) => 'さ',
+            (Onset::S, Nucleus::I) => 'し',
+            (Onset::S, Nucleus::U) => 'す',
+            (Onset::S, Nucleus::E) => 'せ',
+            (Onset::S, Nucleus::O) => 'そ',
+            (Onset::T, Nucleus::A) => 'た',
+            (Onset::T, Nucleus::I) => unreachable!(),
+            (Onset::T, Nucleus::U) => 'つ',
+            (Onset::T, Nucleus::E) => 'て',
+            (Onset::T, Nucleus::O) => 'と',
+            (Onset::N, Nucleus::A) => 'な',
+            (Onset::N, Nucleus::I) => 'に',
+            (Onset::N, Nucleus::U) => 'ぬ',
+            (Onset::N, Nucleus::E) => 'ね',
+            (Onset::N, Nucleus::O) => 'の',
+            (Onset::P, Nucleus::A) => 'は',
+            (Onset::P, Nucleus::I) => 'ひ',
+            (Onset::P, Nucleus::U) => 'ふ',
+            (Onset::P, Nucleus::E) => 'へ',
+            (Onset::P, Nucleus::O) => 'ほ',
+            (Onset::M, Nucleus::A) => 'ま',
+            (Onset::M, Nucleus::I) => 'み',
+            (Onset::M, Nucleus::U) => 'む',
+            (Onset::M, Nucleus::E) => 'め',
+            (Onset::M, Nucleus::O) => 'も',
+            (Onset::J, Nucleus::A) => 'や',
+            (Onset::J, Nucleus::I) => unreachable!(),
+            (Onset::J, Nucleus::U) => 'ゆ',
+            (Onset::J, Nucleus::E) => '江',
+            (Onset::J, Nucleus::O) => 'よ',
+            (Onset::L, Nucleus::A) => 'ら',
+            (Onset::L, Nucleus::I) => 'り',
+            (Onset::L, Nucleus::U) => 'る',
+            (Onset::L, Nucleus::E) => 'れ',
+            (Onset::L, Nucleus::O) => 'ろ',
+            (Onset::W, Nucleus::A) => 'わ',
+            (Onset::W, Nucleus::I) => 'ゐ',
+            (Onset::W, Nucleus::U) => unreachable!(),
+            (Onset::W, Nucleus::E) => 'ゑ',
+            (Onset::W, Nucleus::O) => unreachable!(),
+        }
+    }
+
+    fn katakana_char(&self, nucleus: Nucleus) -> char {
+        match (self, nucleus) {
+            (Onset::Null, Nucleus::A) => 'ア',
+            (Onset::Null, Nucleus::I) => 'イ',
+            (Onset::Null, Nucleus::U) => 'ウ',
+            (Onset::Null, Nucleus::E) => 'エ',
+            (Onset::Null, Nucleus::O) => 'オ',
+            (Onset::K, Nucleus::A) => 'カ',
+            (Onset::K, Nucleus::I) => 'キ',
+            (Onset::K, Nucleus::U) => 'ク',
+            (Onset::K, Nucleus::E) => 'ケ',
+            (Onset::K, Nucleus::O) => 'コ',
+            (Onset::S, Nucleus::A) => 'サ',
+            (Onset::S, Nucleus::I) => 'シ',
+            (Onset::S, Nucleus::U) => 'ス',
+            (Onset::S, Nucleus::E) => 'セ',
+            (Onset::S, Nucleus::O) => 'ソ',
+            (Onset::T, Nucleus::A) => 'タ',
+            (Onset::T, Nucleus::I) => unreachable!(),
+            (Onset::T, Nucleus::U) => 'ツ',
+            (Onset::T, Nucleus::E) => 'テ',
+            (Onset::T, Nucleus::O) => 'ト',
+            (Onset::N, Nucleus::A) => 'ナ',
+            (Onset::N, Nucleus::I) => 'ニ',
+            (Onset::N, Nucleus::U) => 'ヌ',
+            (Onset::N, Nucleus::E) => 'ネ',
+            (Onset::N, Nucleus::O) => 'ノ',
+            (Onset::P, Nucleus::A) => 'ハ',
+            (Onset::P, Nucleus::I) => 'ヒ',
+            (Onset::P, Nucleus::U) => 'フ',
+            (Onset::P, Nucleus::E) => 'ヘ',
+            (Onset::P, Nucleus::O) => 'ホ',
+            (Onset::M, Nucleus::A) => 'マ',
+            (Onset::M, Nucleus::I) => 'ミ',
+            (Onset::M, Nucleus::U) => 'ム',
+            (Onset::M, Nucleus::E) => 'メ',
+            (Onset::M, Nucleus::O) => 'モ',
+            (Onset::J, Nucleus::A) => 'ヤ',
+            (Onset::J, Nucleus::I) => unreachable!(),
+            (Onset::J, Nucleus::U) => 'ユ',
+            (Onset::J, Nucleus::E) => 'エ',
+            (Onset::J, Nucleus::O) => 'ヨ',
+            (Onset::L, Nucleus::A) => 'ラ',
+            (Onset::L, Nucleus::I) => 'リ',
+            (Onset::L, Nucleus::U) => 'ル',
+            (Onset::L, Nucleus::E) => 'レ',
+            (Onset::L, Nucleus::O) => 'ロ',
+            (Onset::W, Nucleus::A) => 'ワ',
+            (Onset::W, Nucleus::I) => 'ヰ',
+            (Onset::W, Nucleus::U) => unreachable!(),
+            (Onset::W, Nucleus::E) => 'ヱ',
+            (Onset::W, Nucleus::O) => unreachable!(),
+        }
+    }
 }
 
 impl Nucleus {
@@ -711,6 +849,16 @@ impl Nucleus {
             Nucleus::U => Some('ು'),
         }
     }
+
+    fn shavian_char(&self) -> char {
+        match self {
+            Nucleus::A => '𐑨',
+            Nucleus::E => '𐑧',
+            Nucleus::I => '𐑦',
+            Nucleus::O => '𐑪',
+            Nucleus::U => '𐑩',
+        }
+    }
 }
 
 impl Coda {
@@ -790,6 +938,27 @@ impl Coda {
         match self {
             Coda::Null => None,
             Coda::N => Some('ᓐ'),
+        }
+    }
+
+    fn shavian_char(&self) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => Some('𐑯'),
+        }
+    }
+
+    fn hiragana_char(&self) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => Some('ん'),
+        }
+    }
+
+    fn katakana_char(&self) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => Some('ン'),
         }
     }
 }

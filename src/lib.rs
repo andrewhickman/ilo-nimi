@@ -26,6 +26,9 @@ pub enum Script {
     Latin,
     LatinTitleCase,
     Syllabics,
+    Shavian,
+    Hiragana,
+    Katakana,
 }
 
 struct Name {
