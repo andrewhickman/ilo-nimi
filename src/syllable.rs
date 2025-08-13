@@ -67,9 +67,15 @@ impl Syllable {
         self.onset.len() + self.nucleus.len() + self.coda.len()
     }
 
-    pub fn write(&self, buf: &mut String, script: Script, first: bool, last: bool) {
+    pub fn write(
+        &self,
+        buf: &mut String,
+        script: Script,
+        prev: Option<&Syllable>,
+        next: Option<&Syllable>,
+    ) {
         match script {
-            Script::LatinTitleCase if first => {
+            Script::LatinTitleCase if prev.is_none() => {
                 if let Some(onset) = self.onset.latin_char() {
                     buf.push(onset.to_ascii_uppercase());
                     buf.push(self.nucleus.latin_char());
@@ -101,7 +107,7 @@ impl Syllable {
             Script::Hebrew => {
                 buf.push(self.onset.hebrew_char());
                 buf.push(self.nucleus.hebrew_char());
-                buf.extend(self.coda.hebrew_char(last));
+                buf.extend(self.coda.hebrew_char(next.is_none()));
             }
             Script::Devanagari => {
                 if let Some(onset) = self.onset.devanagari_char() {
@@ -129,7 +135,7 @@ impl Syllable {
                 } else {
                     buf.push(self.nucleus.gujarati_char());
                 }
-                buf.extend(self.coda.gujarati_char(last));
+                buf.extend(self.coda.gujarati_char(next.is_none()));
             }
             Script::Kannada => {
                 if let Some(onset) = self.onset.kannada_char() {
@@ -138,7 +144,7 @@ impl Syllable {
                 } else {
                     buf.push(self.nucleus.kannada_char());
                 }
-                buf.extend(self.coda.kannada_char(last));
+                buf.extend(self.coda.kannada_char(next.is_none()));
             }
             Script::Syllabics => {
                 buf.push(self.onset.syllabics_char(self.nucleus));
@@ -156,6 +162,32 @@ impl Syllable {
             Script::Katakana => {
                 buf.push(self.onset.katakana_char(self.nucleus));
                 buf.extend(self.coda.katakana_char());
+            }
+            Script::Futhark => {
+                buf.extend(self.onset.futhark_char());
+                buf.push(self.nucleus.futhark_char());
+                buf.extend(self.coda.futhark_char());
+            }
+            Script::Gothic => {
+                buf.extend(self.onset.gothic_char());
+                buf.push(self.nucleus.gothic_char());
+                buf.extend(self.coda.gothic_char());
+            }
+            Script::Ogham => {
+                buf.extend(self.onset.ogham_char());
+                buf.push(self.nucleus.ogham_char());
+                buf.extend(self.coda.ogham_char());
+            }
+            Script::Georgian => {
+                buf.extend(self.onset.mkhedruli_char());
+                buf.push(self.nucleus.mkhedruli_char());
+                buf.extend(self.coda.mkhedruli_char());
+            }
+            Script::Orkhon => {
+                let (onset, has_backness) = self.onset.orkhon_char(prev, self.nucleus.is_back());
+                buf.extend(onset);
+                buf.extend(self.nucleus.orkhon_char(has_backness));
+                buf.extend(self.coda.orkhon_char(next));
             }
         }
     }
@@ -705,6 +737,106 @@ impl Onset {
             (Onset::W, Nucleus::O) => unreachable!(),
         }
     }
+
+    fn futhark_char(&self) -> Option<char> {
+        match self {
+            Onset::Null => None,
+            Onset::P => Some('ᛈ'),
+            Onset::T => Some('ᛏ'),
+            Onset::K => Some('ᚲ'),
+            Onset::S => Some('ᛊ'),
+            Onset::M => Some('ᛗ'),
+            Onset::N => Some('ᚾ'),
+            Onset::L => Some('ᛚ'),
+            Onset::J => Some('ᛃ'),
+            Onset::W => Some('ᚹ'),
+        }
+    }
+
+    fn gothic_char(&self) -> Option<char> {
+        match self {
+            Onset::Null => None,
+            Onset::P => Some('𐍀'),
+            Onset::T => Some('𐍄'),
+            Onset::K => Some('𐌺'),
+            Onset::S => Some('𐍃'),
+            Onset::M => Some('𐌼'),
+            Onset::N => Some('𐌽'),
+            Onset::L => Some('𐌻'),
+            Onset::J => Some('𐌾'),
+            Onset::W => Some('𐍅'),
+        }
+    }
+
+    fn ogham_char(&self) -> Option<char> {
+        match self {
+            Onset::Null => None,
+            Onset::P => Some('ᚁ'),
+            Onset::T => Some('ᚈ'),
+            Onset::K => Some('ᚉ'),
+            Onset::S => Some('ᚄ'),
+            Onset::M => Some('ᚋ'),
+            Onset::N => Some('ᚅ'),
+            Onset::L => Some('ᚂ'),
+            Onset::J => Some('ᚆ'),
+            Onset::W => Some('ᚃ'),
+        }
+    }
+
+    fn mkhedruli_char(&self) -> Option<char> {
+        match self {
+            Onset::Null => None,
+            Onset::P => Some('ფ'),
+            Onset::T => Some('თ'),
+            Onset::K => Some('ქ'),
+            Onset::S => Some('ს'),
+            Onset::M => Some('მ'),
+            Onset::N => Some('ნ'),
+            Onset::L => Some('ლ'),
+            Onset::J => Some('ჲ'),
+            Onset::W => Some('ჳ'),
+        }
+    }
+
+    fn orkhon_char(&self, prev: Option<&Syllable>, is_back: bool) -> (Option<char>, bool) {
+        match (self, is_back) {
+            (Onset::Null, _) => (None, false),
+            (Onset::P, true) => (Some('𐰉'), true),
+            (Onset::P, false) => (Some('𐰋'), true),
+            (Onset::T, _) if matches!(prev, Some(Syllable { coda: Coda::N, .. })) => {
+                (Some('𐰦'), false)
+            }
+            (Onset::T, true) => (Some('𐱃'), true),
+            (Onset::T, false) => (Some('𐱅'), true),
+            (Onset::K, true) => (Some('𐰴'), true),
+            (Onset::K, false) => (Some('𐰚'), true),
+            (Onset::S, true) => (Some('𐰽'), true),
+            (Onset::S, false) => (Some('𐰾'), true),
+            (Onset::M, _) => (Some('𐰢'), false),
+            (Onset::N, true) => (Some('𐰣'), true),
+            (Onset::N, false) => (Some('𐰤'), true),
+            (Onset::L, true) => (Some('𐰞'), true),
+            (Onset::L, false) => (Some('𐰠'), true),
+            (Onset::J, _) if matches!(prev, Some(Syllable { coda: Coda::N, .. })) => {
+                (Some('𐰪'), false)
+            }
+            (Onset::J, true) => (Some('𐰖'), true),
+            (Onset::J, false) => (Some('𐰘'), true),
+            (Onset::W, _)
+                if matches!(
+                    prev,
+                    Some(Syllable {
+                        nucleus: Nucleus::O | Nucleus::U,
+                        coda: Coda::Null,
+                        ..
+                    })
+                ) =>
+            {
+                (None, false)
+            }
+            (Onset::W, _) => (Some('𐰆'), false),
+        }
+    }
 }
 
 impl Nucleus {
@@ -723,6 +855,10 @@ impl Nucleus {
 
     fn len(&self) -> usize {
         1
+    }
+
+    fn is_back(&self) -> bool {
+        matches!(self, Nucleus::A | Nucleus::O | Nucleus::U)
     }
 
     fn latin_char(&self) -> char {
@@ -859,6 +995,57 @@ impl Nucleus {
             Nucleus::U => '𐑩',
         }
     }
+
+    fn futhark_char(&self) -> char {
+        match self {
+            Nucleus::A => 'ᚨ',
+            Nucleus::E => 'ᛖ',
+            Nucleus::I => 'ᛁ',
+            Nucleus::O => 'ᛟ',
+            Nucleus::U => 'ᚢ',
+        }
+    }
+
+    fn gothic_char(&self) -> char {
+        match self {
+            Nucleus::A => '𐌰',
+            Nucleus::E => '𐌴',
+            Nucleus::I => '𐌹',
+            Nucleus::O => '𐍉',
+            Nucleus::U => '𐌿',
+        }
+    }
+
+    fn ogham_char(&self) -> char {
+        match self {
+            Nucleus::A => 'ᚐ',
+            Nucleus::E => 'ᚓ',
+            Nucleus::I => 'ᚔ',
+            Nucleus::O => 'ᚑ',
+            Nucleus::U => 'ᚒ',
+        }
+    }
+
+    fn mkhedruli_char(&self) -> char {
+        match self {
+            Nucleus::A => 'ა',
+            Nucleus::E => 'ე',
+            Nucleus::I => 'ი',
+            Nucleus::O => 'ო',
+            Nucleus::U => 'უ',
+        }
+    }
+
+    fn orkhon_char(&self, has_backness: bool) -> Option<char> {
+        match self {
+            Nucleus::A if has_backness => None,
+            Nucleus::A => Some('𐰀'),
+            Nucleus::E => Some('𐰅'),
+            Nucleus::I if has_backness => None,
+            Nucleus::I => Some('𐰃'),
+            Nucleus::O | Nucleus::U => Some('𐰆'),
+        }
+    }
 }
 
 impl Coda {
@@ -959,6 +1146,48 @@ impl Coda {
         match self {
             Coda::Null => None,
             Coda::N => Some('ン'),
+        }
+    }
+
+    fn futhark_char(&self) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => Some('ᚾ'),
+        }
+    }
+
+    fn gothic_char(&self) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => Some('𐌽'),
+        }
+    }
+
+    fn ogham_char(&self) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => Some('ᚅ'),
+        }
+    }
+
+    fn mkhedruli_char(&self) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => Some('ნ'),
+        }
+    }
+
+    fn orkhon_char(&self, next: Option<&Syllable>) -> Option<char> {
+        match self {
+            Coda::Null => None,
+            Coda::N => match next {
+                Some(Syllable {
+                    onset: Onset::J | Onset::T,
+                    ..
+                }) => None,
+                Some(Syllable { nucleus, .. }) if nucleus.is_back() => Some('𐰣'),
+                _ => Some('𐰤'),
+            },
         }
     }
 }

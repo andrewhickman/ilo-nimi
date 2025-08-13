@@ -29,6 +29,11 @@ pub enum Script {
     Shavian,
     Hiragana,
     Katakana,
+    Futhark,
+    Gothic,
+    Ogham,
+    Georgian,
+    Orkhon,
 }
 
 struct Name {
@@ -102,7 +107,19 @@ impl Name {
     fn write(&self, script: Script) -> String {
         let mut buf = String::new();
         for (i, syllable) in self.syllables.iter().enumerate() {
-            syllable.write(&mut buf, script, i == 0, i == self.syllables.len() - 1);
+            let prev = if i == 0 {
+                None
+            } else {
+                Some(&self.syllables[i - 1])
+            };
+
+            let next = if i == self.syllables.len() - 1 {
+                None
+            } else {
+                Some(&self.syllables[i + 1])
+            };
+
+            syllable.write(&mut buf, script, prev, next);
         }
 
         buf
